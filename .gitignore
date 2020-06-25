@@ -3,3 +3,4 @@ __pycache__
 concatenated_tweets.pickle
 *.bak
 unstacker.py
+*.log
