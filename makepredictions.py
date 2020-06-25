@@ -121,9 +121,9 @@ def updateTransProbs():
             pickle.dump(most_recent_id,f)
     return None
 updateTransProbs()
-#tweet()
-#schedule.every(4).to(8).hours.do(tweet)
-#schedule.every(12).hours.do(updateTransProbs)
-#while True:
-#    schedule.run_pending()
-#    time.sleep(60)
+tweet()
+schedule.every(4).to(8).hours.do(tweet)
+schedule.every(12).hours.do(updateTransProbs)
+while True:
+    schedule.run_pending()
+    time.sleep(60)
