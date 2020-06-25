@@ -105,7 +105,7 @@ def updateTransProbs():
      
         scounts = np.bincount(np.array(df["id"]).astype(np.int32), weights=np.array(counts).astype(np.int32))
         reps=df.groupby(["state1","state2"]).size().values
-        scounts=np.repeat(scounts,reps)
+        scounts=np.repeat(scounts.astype(np.int32),np.array(reps).astype(np.int32))
         del reps
         df["scounts"] = scounts
         del scounts
