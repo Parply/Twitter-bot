@@ -69,9 +69,9 @@ def updateTransProbs():
     with open("twitter_id_trump.pickle","rb") as f:
         twitter_id = pickle.load(f)
     logger.debug("Pulling tweets")
-    tweets = api.user_timeline(id=twitter_id,since_id=most_recent_id)
-    tweets = np.array([[i.text,i.id_str] for i in tweets if not i.text.startswith("RT @")])    
-    
+    tweets = api.user_timeline(id=twitter_id,since_id=most_recent_id,tweet_mode="extended")
+    tweets = np.array([[i.full_text,i.id_str] for i in tweets if not i.full_text.startswith("RT @")])    
+        
     print(f"Got {tweets.shape[0]} new tweets")
     logger.debug(f"Number of new tweets {tweets.shape[0]}")
     if tweets.shape[0]!=0:
@@ -84,27 +84,31 @@ def updateTransProbs():
 
         logger.debug("Adding the new tweets")
         conctweets=(" ".join(np.array(tweets))).split() + conctweets
+        del tweets
         logger.debug("Saving concatinated tweets")
         with open("conc_tweets.pickle","wb") as f:
             pickle.dump(conctweets,f)
         logger.debug("Getting transitions")
         df = pd.DataFrame(window(conctweets), columns=['state1', 'state2','state3'])
+        del conctweets
         df = df[df.state1!="ENDOFTWEET0"]
         df = df[df.state2!="ENDOFTWEET0"]
         logger.debug("Counting transitions")
         counts = df.groupby(['state1','state2'])['state3'].value_counts()
-        df = pd.DataFrame(np.hstack(((np.array(list(counts.index)),np.array(counts)[:,None]))),columns=["state1","state2","state3","counts"])
-        df=df.astype({"counts":"int"})
+
+        df = pd.DataFrame(np.hstack(((np.array(list(counts.index)),counts.values[:,None]))),columns=["state1","state2","state3","counts"])
+        df=df.astype({"counts":"int32"})
 
 
         logger.debug("Calculating probabilities")
         df["id"] = df.groupby(["state1","state2"]).ngroup()
-        ids = np.array(df["id"])
-        counts=np.array(df["counts"])
-        scounts = np.bincount(ids, weights=counts)
-        reps=np.array(df.groupby(["state1","state2"]).size())
+     
+        scounts = np.bincount(np.array(df["id"]).astype(np.int32), weights=np.array(counts).astype(np.int32))
+        reps=df.groupby(["state1","state2"]).size().values
         scounts=np.repeat(scounts,reps)
+        del reps
         df["scounts"] = scounts
+        del scounts
         df["probabilities"] = df["counts"]/df["scounts"]
 
         df = df.astype({"state1":"str","state2":"str","state3":"str","probabilities":"float"})
