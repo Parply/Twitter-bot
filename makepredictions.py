@@ -69,12 +69,17 @@ def updateTransProbs():
     with open("twitter_id_trump.pickle","rb") as f:
         twitter_id = pickle.load(f)
     logger.debug("Pulling tweets")
-    tweets = api.user_timeline(id=twitter_id,since_id=most_recent_id,tweet_mode="extended")
-    tweets = np.array([[i.full_text,i.id_str] for i in tweets if not i.full_text.startswith("RT @")])    
-        
+    try:
+        tweets = api.user_timeline(id=twitter_id,since_id=most_recent_id,tweet_mode="extended")
+        logger.debug(f"Raw get: {tweets}")
+        tweets = np.array([[i.full_text,i.id_str] for i in tweets if not i.full_text.startswith("RT @")])    
+        logger.debug(f"Tweet array: {tweets}")
+    except:
+        logger.error("API error!!!")
+        tweets = np.array([])
     print(f"Got {tweets.shape[0]} new tweets")
     logger.debug(f"Number of new tweets {tweets.shape[0]}")
-    if tweets.shape[0]!=0:
+    if tweets.shape[0]>=1:
 
         most_recent_id = str(tweets[:,1].astype(np.int64).max())
         tweets = np.array(list(map(addStartEnd,tweets[:,0])))
@@ -127,7 +132,7 @@ def updateTransProbs():
 updateTransProbs()
 tweet()
 schedule.every(4).to(8).hours.do(tweet)
-schedule.every(12).hours.do(updateTransProbs)
+schedule.every(24).hours.do(updateTransProbs)
 while True:
     schedule.run_pending()
     time.sleep(60)
